@@ -56,7 +56,6 @@ if args.model == 'resnet18':
     optimizer = optim.Adam(resnet18.parameters(), lr=0.1, weight_decay=0)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5)
     criterion = nn.CrossEntropyLoss()
-
     num_epochs = 50
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # Freeze all the layers in the model
@@ -70,11 +69,31 @@ if args.model == 'resnet18':
 
     trainer = Trainer(args, dataloaders, dataset_sizes, resnet18, criterion, optimizer, scheduler, num_epochs)
 
-# elif args.model == 'transformer':
-#     trainer = DAFTTrainer(train_dl, 
-#         em_val_dl, 
-#         args,
-#         test_dl = em_test_dl)
+elif args.model == 'transformer':
+    transformer = torch.hub.load('facebookresearch/deit:main', 'deit_tiny_patch16_224', pretrained=True)
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
+    
+    exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.97)
+    criterion = LabelSmoothingCrossEntropy()
+    criterion = criterion.to(device)
+    optimizer = optim.Adam(model.head.parameters(), lr=0.001)    
+    num_epochs = 50
+    
+
+    for param in transformer.parameters(): #freeze model
+        param.requires_grad = False
+
+    n_inputs = model.head.in_features
+    transformer.head = nn.Sequential(
+        nn.Linear(n_inputs, 512),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(512, 16)
+    )
+    model = transformer.to(device)
+    trainer = Trainer(args, dataloaders, dataset_sizes, transformer, criterion, optimizer, exp_lr_scheduler, num_epochs)
+
 else:
     raise ValueError("not Implementation for args.model")
 
@@ -88,4 +107,3 @@ if args.mode == 'train':
 #     trainer.eval()
 else:
     raise ValueError("not Implementation for args.mode")
-    
