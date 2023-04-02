@@ -5,7 +5,7 @@ def args_parser():
 
     parser.add_argument("--p", 
     	dest="path", action="store", 
-    	default = "/Volumes/mlh/group1", 
+    	default = "/media/nyuad/189370B3586E6F7C/group1", 
     	help="indicate the path of datasets")
     parser.add_argument("--m", dest="model", type=str, action="store", 
     	default = 'resnet18', 

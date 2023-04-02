@@ -93,9 +93,12 @@ def make_img_df(imgs_dir):
 def merge_df(all_df_img, all_df_ann):
 	dataframes = []
 	for x in all_df_img:
-		print(all_df_img.keys())
-		mapped_df = pd.merge(all_df_img[x], all_df_ann[x], on='Index')
-		dataframes.append(mapped_df)
+		if x == '.DS_Store':
+		   continue
+		else:
+			# print(all_df_img.keys())
+			mapped_df = pd.merge(all_df_img[x], all_df_ann[x], on='Index')
+			dataframes.append(mapped_df)
 	meta_dataset = pd.concat(dataframes, axis=0)
 	return meta_dataset
 
@@ -127,7 +130,7 @@ def get_public_embryo(args):
 	
 	local_path = args.path
 	
-	annotations_path = local_path + "/embyro_dataset_annotations"
+	annotations_path = local_path + "/embryo_dataset_annotations"
 	annotations = [file for file in Path(annotations_path).glob('*.csv')]
 	ann_df = make_ann_df(annotations)
 	
