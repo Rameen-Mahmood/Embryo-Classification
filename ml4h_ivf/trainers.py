@@ -209,7 +209,7 @@ class Trainer():
                     running_loss += train_loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
                 
-                epoch_loss = running_loss / dataset_sizes[phase]
+                epoch_loss = running_loss / self.dataset_sizes[phase]
 
                 if phase == 'train':
                     self.train_loss_values.append(epoch_loss)
@@ -220,21 +220,22 @@ class Trainer():
                     self.val_auroc_values.append(auroc)
 
                 
-                epoch_acc =  running_corrects.double() / dataset_sizes[phase]
+                epoch_acc =  running_corrects.double() / self.dataset_sizes[phase]
 
                 print("{} Loss: {:.4f} Acc: {:.4f}".format(phase, epoch_loss, epoch_acc))
                 
                 if phase == 'val' and epoch_acc > best_acc:
                     best_acc = epoch_acc
-                    best_model_wts = copy.deepcopy(model.state_dict()) # keep the best testing accuracy model
+                    best_model_wts = copy.deepcopy(self.model.state_dict()) # keep the best testing accuracy model
             print()
             
         print('Finished Training Trainset')
                 
-        plt.plot(np.array(loss_values), 'r')
+        plt.plot(np.array(self.train_loss_values), 'r')
+        plt.plot(np.array(self.train_auroc_values), 'r')
         time_elapsed = time.time() - since # slight error
         print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
         print("Best Val Acc: {:.4f}".format(best_acc))
         
-        model.load_state_dict(best_model_wts)
-        return model
+        self.model.load_state_dict(best_model_wts)
+        return self.model
