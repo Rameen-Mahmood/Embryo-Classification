@@ -23,7 +23,7 @@ import pandas as pd
 
 from datasets.embryo_public import get_public_embryo
 from arguments import args_parser
-# from trainers import Trainer
+from trainers import Trainer
 import argparse 
 
 parser = args_parser()
@@ -34,7 +34,20 @@ print(args)
 # local_path = "/media/nyuad/189370B3586E6F7C/group1"
 local_path = args.path
 
-em_train_dl, em_val_dl, em_test_dl = get_public_embryo(args)
+em_train_dl, em_val_dl, em_test_dl, train_size, val_size, test_size = get_public_embryo(args)
+
+dataloaders = {
+    "train": em_train_dl,
+    "val": em_val_dl,
+    "test": em_test_dl
+}
+
+
+dataset_sizes = {
+    "train": train_size,
+    "val": val_size,
+    "test": test_size,
+}
 
 
 if args.model == 'resnet18':
@@ -55,6 +68,8 @@ if args.model == 'resnet18':
     resnet18.fc = nn.Linear(num_ftrs, 16).to("cuda")
     resent18 = resnet18.to(device)
 
+    trainer = Trainer(args, dataloaders, dataset_sizes, resnet18, criterion, optimizer, scheduler, num_epochs)
+
 # elif args.model == 'transformer':
 #     trainer = DAFTTrainer(train_dl, 
 #         em_val_dl, 
@@ -65,8 +80,12 @@ else:
 
 if args.mode == 'train':
     print("==> training")
-    trainer.train()
-elif args.mode == 'eval':
-    trainer.eval()
+    trainer.train_epoch()
+    trainer.plot_auroc()
+    trainer.plot_loss()
+
+# elif args.mode == 'eval':
+#     trainer.eval()
 else:
     raise ValueError("not Implementation for args.mode")
+    

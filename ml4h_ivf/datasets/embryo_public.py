@@ -20,11 +20,29 @@ class Embryo_Public(Dataset):
         self.dataframe = dataframe
         self.args = args
         self.transform = transform
+        # Define the mapping from phase class indices to labels
+        self.id_to_label = {0:"tPB2", 1:"tPNa",
+                       2:"tPNf", 3:"t2", 
+                       4:"t3", 5:"t4", 
+                       6:"t5", 7:"t6", 
+                       8:"t7", 9:"t8", 
+                       10:"t9+", 11:"tM", 
+                       12:"tSB", 13:"tB", 
+                       14:"tEB", 15:"tHB"}
+
+        self.label_to_id = {"tPB2":0, "tPNa":1,
+                       "tPNf":2, "t2":3, 
+                       "t3":4, "t4":5, 
+                       "t5":6, "t6":7, 
+                       "t7":8, "t8":9, 
+                       "t9+":10, "tM":11, 
+                       "tSB":12, "tB":13, 
+                       "tEB":14, "tHB":15}
 
     def __getitem__(self, index):
         img = self.dataframe.iloc[index]['Images']
         label = self.dataframe.iloc[index]['Phase']
-        label_id = label_to_id[label]
+        label_id = self.label_to_id[label]
         
         if self.transform:
             # img = self.transform(img)
@@ -36,6 +54,7 @@ class Embryo_Public(Dataset):
     
     def __len__(self):
         return len(self.dataframe)
+
 
 
 def make_ann_df(annotations):
@@ -152,5 +171,9 @@ def get_public_embryo(args):
 	val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True)
 	test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 	
-	
-	return train_loader, val_loader, test_loader
+
+	train_size =len(train_dataset)
+	val_size =len(val_dataset)
+	test_size = len(test_dataset)
+
+	return train_loader, val_loader, test_loader, train_size, val_size, test_size
