@@ -13,6 +13,7 @@ from tqdm import tqdm
 import numpy as np
 from sklearn import metrics
 from torchmetrics.classification import MulticlassAUROC
+import matplotlib.pyplot as plt
 
 
 train_loss_values = []
@@ -40,9 +41,6 @@ class Trainer():
         self.scheduler = scheduler
         self.num_epochs = num_epochs
 
-    def train(self):
-        pass
-
     def validate(self):
         pass
 
@@ -50,7 +48,6 @@ class Trainer():
         if self.args.load_state is None:
             return
         checkpoint = torch.load(self.args.load_state)
-
 
         own_state = self.model.state_dict()
 
@@ -159,7 +156,7 @@ class Trainer():
         auroc_scores = []
         for i in range(len(self.val_auroc_values)):
             auroc_scores.append(self.val_auroc_values[i].item())
-        plt.plot(np.array(auroc_scores), 'r')
+        plt.plot(np.array(auroc_scores), 'a')
         plt.savefig(f"{self.args.save_dir}/{filename}")
 
 
@@ -168,7 +165,7 @@ class Trainer():
         loss_values = []
         for i in range(len(self.val_loss_values)):
             loss_values.append(self.val_loss_values[i])
-        plt.plot(np.array(loss_values), 'r')
+        plt.plot(np.array(loss_values), 'a')
         plt.savefig(f"{self.args.save_dir}/{filename}")
 
 
@@ -230,9 +227,19 @@ class Trainer():
             print()
             
         print('Finished Training Trainset')
-                
-        plt.plot(np.array(self.train_loss_values), 'r')
-        plt.plot(np.array(self.train_auroc_values), 'r')
+        
+        # plt.plot(np.array(self.train_loss_values), 'r')
+        # plt.plot(np.array(self.train_auroc_values), 'r')
+        auroc_scores = []
+        for i in range(len(self.train_auroc_values)):
+            auroc_scores.append(self.train_auroc_values[i].item())
+        plt.plot(np.array(auroc_scores), 'a')
+
+        loss_values = []
+        for i in range(len(self.train_loss_values)):
+            loss_values.append(self.train_loss_values[i])
+        plt.plot(np.array(loss_values), 'a')
+
         time_elapsed = time.time() - since # slight error
         print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
         print("Best Val Acc: {:.4f}".format(best_acc))

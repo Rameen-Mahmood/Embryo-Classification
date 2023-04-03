@@ -102,6 +102,8 @@ if args.mode == 'train':
     trainer.train_epoch()
     trainer.plot_auroc()
     trainer.plot_loss()
+    # val is included
+    # how to get the trained model and test
 
 # elif args.mode == 'eval':
 #     trainer.eval()
