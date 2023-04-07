@@ -49,7 +49,7 @@ dataset_sizes = {
     "test": test_size,
 }
 
-
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 if args.model == 'resnet18':
     resnet18 = models.resnet18(models.ResNet18_Weights.IMAGENET1K_V1).to('cuda')
    
@@ -57,7 +57,7 @@ if args.model == 'resnet18':
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5)
     criterion = nn.CrossEntropyLoss()
     num_epochs = 50
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    
     # Freeze all the layers in the model
     for param in resnet18.parameters():
         param.requires_grad = False
@@ -71,8 +71,6 @@ if args.model == 'resnet18':
 
 elif args.model == 'transformer':
     transformer = torch.hub.load('facebookresearch/deit:main', 'deit_tiny_patch16_224', pretrained=True)
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
     
     exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.97)
     criterion = LabelSmoothingCrossEntropy()
@@ -109,3 +107,4 @@ if args.mode == 'train':
 #     trainer.eval()
 else:
     raise ValueError("not Implementation for args.mode")
+

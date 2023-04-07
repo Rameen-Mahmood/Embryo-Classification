@@ -152,21 +152,39 @@ class Trainer():
 
 
     def plot_auroc(self):
-        filename = "auroc_scores.pdf"
-        auroc_scores = []
+        val_filename = "val_auroc_scores.pdf"
+        val_auroc_scores = []
         for i in range(len(self.val_auroc_values)):
-            auroc_scores.append(self.val_auroc_values[i].item())
-        plt.plot(np.array(auroc_scores), 'r')
-        plt.savefig(f"{self.args.save_dir}/{filename}")
+            val_auroc_scores.append(self.val_auroc_values[i].item())
+        plt.plot(np.array(val_auroc_scores), 'r')
+        plt.savefig(f"{self.args.save_dir}/{val_filename}")
+        plt.close()
+
+        train_filename = "train_auroc_scores.pdf"
+        train_auroc_scores = []
+        for i in range(len(self.train_auroc_values)):
+            train_auroc_scores.append(self.train_auroc_values[i].item())
+        plt.plot(np.array(train_auroc_scores), 'r')
+        plt.savefig(f"{self.args.save_dir}/{train_filename}")
+        plt.close()
 
 
     def plot_loss(self):
-        filename = "loss_curves.pdf"
-        loss_values = []
+        val_filename = "val_loss_curves.pdf"
+        val_loss_values = []
         for i in range(len(self.val_loss_values)):
-            loss_values.append(self.val_loss_values[i])
-        plt.plot(np.array(loss_values), 'r')
-        plt.savefig(f"{self.args.save_dir}/{filename}")
+            val_loss_values.append(self.val_loss_values[i])
+        plt.plot(np.array(val_loss_values), 'r')
+        plt.savefig(f"{self.args.save_dir}/{val_filename}")
+        plt.close()
+
+        train_filename = "train_loss_curves.pdf"
+        train_loss_values = []
+        for i in range(len(self.train_loss_values)):
+            train_loss_values.append(self.train_loss_values[i])
+        plt.plot(np.array(train_loss_values), 'r')
+        plt.savefig(f"{self.args.save_dir}/{train_filename}")
+        plt.close()
 
 
     def train_epoch(self):
@@ -227,18 +245,6 @@ class Trainer():
             print()
             
         print('Finished Training Trainset')
-        
-        # plt.plot(np.array(self.train_loss_values), 'r')
-        # plt.plot(np.array(self.train_auroc_values), 'r')
-        auroc_scores = []
-        for i in range(len(self.train_auroc_values)):
-            auroc_scores.append(self.train_auroc_values[i].item())
-        plt.plot(np.array(auroc_scores), 'r')
-
-        loss_values = []
-        for i in range(len(self.train_loss_values)):
-            loss_values.append(self.train_loss_values[i])
-        plt.plot(np.array(loss_values), 'r')
 
         time_elapsed = time.time() - since # slight error
         print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
