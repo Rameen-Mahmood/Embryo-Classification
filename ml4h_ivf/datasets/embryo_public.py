@@ -160,9 +160,8 @@ def get_public_embryo(args):
 	dataset = merge_df(img_df, ann_df)
 	print(dataset.head())
 	
-	train_df, test_df = train_test_split(dataset, test_size=0.15)
-	train_df, val_df = train_test_split(train_df, test_size=0.15)
-	
+	train_df, test_val_df = train_test_split(dataset, test_size=0.3)
+	test_df, val_df = train_test_split(test_val_df, test_size=0.5)
 	
 	train_dataset = Embryo_Public(train_df, args, transform=train_transforms)
 	val_dataset = Embryo_Public(val_df, args, transform=test_transforms)

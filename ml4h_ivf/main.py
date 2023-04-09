@@ -123,7 +123,7 @@ if args.mode == 'train':
     trainer.plot_auroc()
     trainer.plot_loss()
 
-# elif args.mode == 'etes':
+# elif args.mode == 'eval':
 #     trainer.eval()
 else:
     raise ValueError("not Implementation for args.mode")
