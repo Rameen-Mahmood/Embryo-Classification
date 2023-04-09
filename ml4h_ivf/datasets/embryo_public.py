@@ -158,6 +158,7 @@ def get_public_embryo(args):
 	img_df = make_img_df(imgs_dir)
 	
 	dataset = merge_df(img_df, ann_df)
+	print(dataset.head())
 	
 	train_df, test_df = train_test_split(dataset, test_size=0.15)
 	train_df, val_df = train_test_split(train_df, test_size=0.15)
@@ -168,7 +169,7 @@ def get_public_embryo(args):
 	test_dataset = Embryo_Public(test_df, args, transform=test_transforms)
 	
 	train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-	val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True)
+	val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 	test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 	
 
