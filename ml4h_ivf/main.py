@@ -8,6 +8,7 @@ from torchvision import models
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data import Dataset
+from transformers import AutoFeatureExtractor, ResNetForImageClassification
 
 import numpy as np
 import os
@@ -19,12 +20,16 @@ import csv
 import matplotlib.pyplot as plt
 from pathlib import Path
 import pandas as pd
+import pickle
 
 
-from datasets.embryo_public import get_public_embryo
+from dataset.embryo_public import get_public_embryo
 from arguments import args_parser
 from trainers import Trainer
 import argparse 
+import modelBuilder
+import timm
+from timm.loss import LabelSmoothingCrossEntropy # This is better than normal nn.CrossEntropyLoss
 
 parser = args_parser()
 args = parser.parse_args()
@@ -50,47 +55,64 @@ dataset_sizes = {
 }
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
 if args.model == 'resnet18':
+    # resnet18 = models.resnet18() # we do not specify pretrained=True, i.e. do not load default weights
+    
+    # with open('saved_weights.pkl', 'rb') as f:
+    #     weights = pickle.load(f)
+    # #resnet18.load_state_dict(weights).to('cuda')
+    # resnet18 = models.resnet18()
+    # resnet18.load_state_dict(weights)
+
     resnet18 = models.resnet18(models.ResNet18_Weights.IMAGENET1K_V1).to('cuda')
    
     optimizer = optim.Adam(resnet18.parameters(), lr=0.1, weight_decay=0)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5)
     criterion = nn.CrossEntropyLoss()
+
     num_epochs = 50
-    
+
     # Freeze all the layers in the model
     for param in resnet18.parameters():
         param.requires_grad = False
 
     # Create a new output layer with 16 output units
-    num_ftrs = resnet18.fc.in_features
-    resnet18.fc = nn.Linear(num_ftrs, 16).to("cuda")
+    # resnet18.fc = nn.Linear(num_ftrs, 16).to("cuda")
+    
+    n_inputs = resnet18.fc.in_features
+    resnet18.fc = nn.Sequential(
+        nn.Linear(n_inputs, 512),
+        nn.ReLU(),
+        # nn.Dropout(0.1),
+        nn.Linear(512, 16),
+    )
     resent18 = resnet18.to(device)
 
     trainer = Trainer(args, dataloaders, dataset_sizes, resnet18, criterion, optimizer, scheduler, num_epochs)
 
 elif args.model == 'transformer':
     transformer = torch.hub.load('facebookresearch/deit:main', 'deit_tiny_patch16_224', pretrained=True)
-    
-    exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.97)
+    num_epochs = 100
+
     criterion = LabelSmoothingCrossEntropy()
     criterion = criterion.to(device)
-    optimizer = optim.Adam(model.head.parameters(), lr=0.001)    
-    num_epochs = 50
-    
+    optimizer = optim.Adam(transformer.head.parameters(), lr=0.001)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.97)
 
     for param in transformer.parameters(): #freeze model
         param.requires_grad = False
 
-    n_inputs = model.head.in_features
+    n_inputs = transformer.head.in_features
     transformer.head = nn.Sequential(
         nn.Linear(n_inputs, 512),
         nn.ReLU(),
         nn.Dropout(0.3),
         nn.Linear(512, 16)
     )
-    model = transformer.to(device)
-    trainer = Trainer(args, dataloaders, dataset_sizes, transformer, criterion, optimizer, exp_lr_scheduler, num_epochs)
+    transformer = transformer.to(device)
+
+    trainer = Trainer(args, dataloaders, dataset_sizes, transformer, criterion, optimizer, scheduler, num_epochs)
 
 else:
     raise ValueError("not Implementation for args.model")
@@ -100,11 +122,8 @@ if args.mode == 'train':
     trainer.train_epoch()
     trainer.plot_auroc()
     trainer.plot_loss()
-    # val is included
-    # how to get the trained model and test
 
-# elif args.mode == 'eval':
+# elif args.mode == 'etes':
 #     trainer.eval()
 else:
     raise ValueError("not Implementation for args.mode")
-

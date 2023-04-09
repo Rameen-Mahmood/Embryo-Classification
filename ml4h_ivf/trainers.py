@@ -229,7 +229,7 @@ class Trainer():
                 if phase == 'train':
                     self.train_loss_values.append(epoch_loss)
                     self.train_auroc_values.append(auroc)
-    #                 scheduler.step() # step at end of epoch
+                    scheduler.step() # step at end of epoch
                 else: 
                     self.val_loss_values.append(epoch_loss)
                     self.val_auroc_values.append(auroc)
