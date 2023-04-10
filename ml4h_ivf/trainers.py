@@ -206,7 +206,8 @@ class Trainer():
                 
                 running_loss = 0.0
                 running_corrects = 0.0
-                
+                auroc_sum = 0.0
+
                 for inputs, labels in tqdm(self.dataloaders[phase]):
                     inputs = inputs.to(device)
                     labels = labels.to(device)
@@ -224,16 +225,18 @@ class Trainer():
                             self.optimizer.step()
                     running_loss += train_loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
+                    auroc_sum += auroc
                 
                 epoch_loss = running_loss / self.dataset_sizes[phase]
+                epoch_auroc = auroc_sum / self.dataset_sizes[phase]
 
                 if phase == 'train':
                     self.train_loss_values.append(epoch_loss)
-                    self.train_auroc_values.append(auroc)
+                    self.train_auroc_values.append(epoch_auroc)
                     self.scheduler.step() # step at end of epoch
                 else: 
                     self.val_loss_values.append(epoch_loss)
-                    self.val_auroc_values.append(auroc)
+                    self.val_auroc_values.append(epoch_auroc)
 
                 
                 epoch_acc =  running_corrects.double() / self.dataset_sizes[phase]

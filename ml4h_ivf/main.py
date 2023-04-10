@@ -27,7 +27,6 @@ from dataset.embryo_public import get_public_embryo
 from arguments import args_parser
 from trainers import Trainer
 import argparse 
-import modelBuilder
 import timm
 from timm.loss import LabelSmoothingCrossEntropy # This is better than normal nn.CrossEntropyLoss
 
@@ -57,23 +56,7 @@ dataset_sizes = {
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 if args.model == 'resnet18':
-    # resnet18 = models.resnet18() # we do not specify pretrained=True, i.e. do not load default weights
-    
-    # with open('saved_weights.pkl', 'rb') as f:
-    #     weights = pickle.load(f)
-    # #resnet18.load_state_dict(weights).to('cuda')
-    # resnet18 = models.resnet18()
-    # resnet18.load_state_dict(weights)
-
-    resnet18 = models.resnet18(models.ResNet18_Weights.IMAGENET1K_V1).to('cuda')
-   
-    optimizer = optim.Adam(resnet18.parameters(), lr=0.001)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5) #not use
-    criterion = LabelSmoothingCrossEntropy()
-    criterion = criterion.to(device)
-
-    num_epochs = 50
-
+    resnet18 = models.resnet18(models.ResNet18_Weights.IMAGENET1K_V1).to('cuda')  
     # Freeze all the layers in the model
     for param in resnet18.parameters():
         param.requires_grad = False
@@ -90,17 +73,16 @@ if args.model == 'resnet18':
     )
     resent18 = resnet18.to(device)
 
+    optimizer = optim.Adam(resnet18.parameters(), lr=0.001)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5) #not use
+    criterion = LabelSmoothingCrossEntropy()
+    criterion = criterion.to(device)
+    num_epochs = 50
+
     trainer = Trainer(args, dataloaders, dataset_sizes, resnet18, criterion, optimizer, scheduler, num_epochs)
 
 elif args.model == 'transformer':
     transformer = torch.hub.load('facebookresearch/deit:main', 'deit_tiny_patch16_224', pretrained=True)
-    num_epochs = 100
-
-    criterion = LabelSmoothingCrossEntropy()
-    criterion = criterion.to(device)
-    optimizer = optim.Adam(transformer.head.parameters(), lr=0.001)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.97)
-
     for param in transformer.parameters(): #freeze model
         param.requires_grad = False
 
@@ -112,6 +94,13 @@ elif args.model == 'transformer':
         nn.Linear(512, 16)
     )
     transformer = transformer.to(device)
+
+    num_epochs = 100
+
+    criterion = LabelSmoothingCrossEntropy()
+    criterion = criterion.to(device)
+    optimizer = optim.Adam(transformer.head.parameters(), lr=0.001)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.97)
 
     trainer = Trainer(args, dataloaders, dataset_sizes, transformer, criterion, optimizer, scheduler, num_epochs)
 
