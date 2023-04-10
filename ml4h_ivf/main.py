@@ -22,7 +22,7 @@ import pandas as pd
 import pickle
 
 
-from dataset.embryo_public import get_public_embryo
+from datasets.embryo_public import get_public_embryo
 from arguments import args_parser
 from trainers import Trainer
 import argparse 
