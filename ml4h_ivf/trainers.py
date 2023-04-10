@@ -157,13 +157,13 @@ class Trainer():
         val_auroc_scores = []
         for i in range(len(self.val_auroc_values)):
             val_auroc_scores.append(self.val_auroc_values[i].item())
-        plt.plot(np.array(val_auroc_scores), 'r', label='Val')
+        plt.plot(np.array(val_auroc_scores), 'y', label='Val')
        
 
         train_auroc_scores = []
         for i in range(len(self.train_auroc_values)):
             train_auroc_scores.append(self.train_auroc_values[i].item())
-        plt.plot(np.array(train_auroc_scores), 'r', label='Train')
+        plt.plot(np.array(train_auroc_scores), 'b', label='Train')
 
         plt.title('Training and Validation AUROC')
         plt.xlabel('Epochs')
@@ -179,13 +179,13 @@ class Trainer():
         val_loss_values = []
         for i in range(len(self.val_loss_values)):
             val_loss_values.append(self.val_loss_values[i])
-        plt.plot(np.array(val_loss_values), 'r', label='Val')
+        plt.plot(np.array(val_loss_values), 'y', label='Val')
 
 
         train_loss_values = []
         for i in range(len(self.train_loss_values)):
             train_loss_values.append(self.train_loss_values[i])
-        plt.plot(np.array(train_loss_values), 'r', label='Train')
+        plt.plot(np.array(train_loss_values), 'b', label='Train')
 
         plt.title('Training and Validation Loss')
         plt.xlabel('Epochs')
