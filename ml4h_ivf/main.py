@@ -8,7 +8,6 @@ from torchvision import models
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data import Dataset
-from transformers import AutoFeatureExtractor, ResNetForImageClassification
 
 import numpy as np
 import os
