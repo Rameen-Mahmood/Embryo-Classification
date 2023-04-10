@@ -67,9 +67,10 @@ if args.model == 'resnet18':
 
     resnet18 = models.resnet18(models.ResNet18_Weights.IMAGENET1K_V1).to('cuda')
    
-    optimizer = optim.Adam(resnet18.parameters(), lr=0.1, weight_decay=0)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5)
-    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(resnet18.parameters(), lr=0.001)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5) #not use
+    criterion = LabelSmoothingCrossEntropy()
+    criterion = criterion.to(device)
 
     num_epochs = 50
 

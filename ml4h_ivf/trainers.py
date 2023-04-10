@@ -218,6 +218,7 @@ class Trainer():
                         _, preds = torch.max(outputs, 1) # used for accuracy, selects  prediction with the highest value from model's output tensor
                         train_loss = self.criterion(outputs, labels) #loss bw outputs and labels
                         auroc = metric(outputs, labels)
+                        # auroc should be summed for the entire epoch or calculate the min/max
                         if phase == 'train':
                             train_loss.backward()
                             self.optimizer.step()
