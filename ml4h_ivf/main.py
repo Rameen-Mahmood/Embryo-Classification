@@ -112,6 +112,8 @@ if args.mode == 'train':
     trainer.plot_auroc()
     trainer.plot_loss()
 
+    trainer.test_net()
+
 # elif args.mode == 'eval':
 #     trainer.eval()
 else:

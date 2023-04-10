@@ -152,39 +152,88 @@ class Trainer():
 
 
     def plot_auroc(self):
-        val_filename = "val_auroc_scores.pdf"
+        filename = "auroc_scores.pdf"
+
         val_auroc_scores = []
         for i in range(len(self.val_auroc_values)):
             val_auroc_scores.append(self.val_auroc_values[i].item())
-        plt.plot(np.array(val_auroc_scores), 'r')
-        plt.savefig(f"{self.args.save_dir}/{val_filename}")
-        plt.close()
+        plt.plot(np.array(val_auroc_scores), 'r', label='Val')
+       
 
-        train_filename = "train_auroc_scores.pdf"
         train_auroc_scores = []
         for i in range(len(self.train_auroc_values)):
             train_auroc_scores.append(self.train_auroc_values[i].item())
-        plt.plot(np.array(train_auroc_scores), 'r')
-        plt.savefig(f"{self.args.save_dir}/{train_filename}")
+        plt.plot(np.array(train_auroc_scores), 'r', label='Train')
+
+        plt.title('Training and Validation AUROC')
+        plt.xlabel('Epochs')
+        plt.ylabel('AUROC')
+
+        plt.savefig(f"{self.args.save_dir}/{filename}")
         plt.close()
 
 
     def plot_loss(self):
-        val_filename = "val_loss_curves.pdf"
+        filename = "loss_curves.pdf"
+        
         val_loss_values = []
         for i in range(len(self.val_loss_values)):
             val_loss_values.append(self.val_loss_values[i])
-        plt.plot(np.array(val_loss_values), 'r')
-        plt.savefig(f"{self.args.save_dir}/{val_filename}")
-        plt.close()
+        plt.plot(np.array(val_loss_values), 'r', label='Val')
 
-        train_filename = "train_loss_curves.pdf"
+
         train_loss_values = []
         for i in range(len(self.train_loss_values)):
             train_loss_values.append(self.train_loss_values[i])
-        plt.plot(np.array(train_loss_values), 'r')
-        plt.savefig(f"{self.args.save_dir}/{train_filename}")
+        plt.plot(np.array(train_loss_values), 'r', label='Train')
+
+        plt.title('Training and Validation Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+
+        plt.savefig(f"{self.args.save_dir}/{filename}")
         plt.close()
+
+
+    def test_net(self):
+        test_loss = 0.0
+        class_correct = list(0 for i in range(16))
+        class_total = list(0 for i in range(16))
+        self.model.eval()
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+        for data, target in tqdm(self.dataloaders['test']):
+            data, target = data.to(device), target.to(device)
+            with torch.no_grad(): # turn off autograd for faster testing
+                output = self.model(data)
+                loss = self.criterion(output, target)
+            test_loss += loss.item() * data.size(0)
+            _, pred = torch.max(output, 1)
+            correct_tensor = pred.eq(target.data.view_as(pred))
+            correct = np.squeeze(correct_tensor.cpu().numpy())
+
+            if len(target) == self.args.batch_size: 
+                for i in range(self.args.batch_size):
+                    label = target.data[i]
+                    class_correct[label] += correct[i].item()
+                    class_total[label] += 1
+
+        test_loss = test_loss / self.dataset_sizes['test']
+        print('Test Loss: {:.4f}'.format(test_loss))
+        classes = ["tPB2","tPNa","tPNf","t2","t3","t4", "t5", "t6", "t7","t8", "t9+","tM","tSB", "tB","tEB","tHB"]
+        for i in range(16):
+            if class_total[i] > 0:
+                print("Test Accuracy of %5s: %2d%% (%2d/%2d)" % (
+                    classes[i], 100*class_correct[i]/class_total[i], np.sum(class_correct[i]), np.sum(class_total[i])
+                ))
+            else:
+                print("Test accuracy of %5s: NA" % (classes[i]))
+        
+        print("Test Accuracy of %2d%% (%2d/%2d)" % (
+                    100*np.sum(class_correct)/np.sum(class_total), np.sum(class_correct), np.sum(class_total)
+                ))
+
 
 
     def train_epoch(self):
