@@ -14,6 +14,8 @@ def args_parser():
         help='mode: train or test')
     parser.add_argument('--bs', dest='batch_size', type=int, default=32,
         help='batch size')
+    parser.add_argument('--ep', dest='num_epochs', type=int, default=50,
+        help='number of epochs')
     parser.add_argument('--save_dir', type=str, 
     	help='Directory relative which all output files are stored',
         default='checkpoints')

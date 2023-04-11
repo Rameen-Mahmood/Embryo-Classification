@@ -76,7 +76,7 @@ if args.model == 'resnet18':
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5) #not use
     criterion = LabelSmoothingCrossEntropy()
     criterion = criterion.to(device)
-    num_epochs = 50
+    num_epochs = args.num_epochs
 
     trainer = Trainer(args, dataloaders, dataset_sizes, resnet18, criterion, optimizer, scheduler, num_epochs)
 
@@ -94,7 +94,7 @@ elif args.model == 'transformer':
     )
     transformer = transformer.to(device)
 
-    num_epochs = 100
+    num_epochs = args.num_epochs
 
     criterion = LabelSmoothingCrossEntropy()
     criterion = criterion.to(device)

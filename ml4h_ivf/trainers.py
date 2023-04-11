@@ -274,7 +274,7 @@ class Trainer():
                             self.optimizer.step()
                     running_loss += train_loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
-                    auroc_sum += auroc
+                    auroc_sum += auroc * inputs.size(0)
                 
                 epoch_loss = running_loss / self.dataset_sizes[phase]
                 epoch_auroc = auroc_sum / self.dataset_sizes[phase]
