@@ -40,6 +40,7 @@ class Trainer():
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.num_epochs = num_epochs
+        # self.epochs_stats = {'loss train': [], 'loss val': [], 'auroc val': [], 'loss align train': [], 'loss align val': []}
 
     def validate(self):
         pass
@@ -138,17 +139,18 @@ class Trainer():
             }, path)
         print(f"saving {prefix} checkpoint at epoch {self.epoch}")
 
-    def plot_stats(self, key='loss', filename='training_stats.pdf'):
-        for loss in self.epochs_stats:
-            if key in loss:
-                plt.plot(self.epochs_stats[loss], label = f"{loss}")
+
+    # def plot_stats(self, key='loss', filename='training_stats.pdf'):
+    #     for loss in self.epochs_stats:
+    #         if key in loss:
+    #             plt.plot(self.epochs_stats[loss], label = f"{loss}")
         
-        plt.xlabel('epochs')
-        plt.ylabel(key)
-        plt.title(key)
-        plt.legend()
-        plt.savefig(f"{self.args.save_dir}/{filename}")
-        plt.close()
+    #     plt.xlabel('epochs')
+    #     plt.ylabel(key)
+    #     plt.title(key)
+    #     plt.legend()
+    #     plt.savefig(f"{self.args.save_dir}/{filename}")
+    #     plt.close()
 
 
     def plot_auroc(self):
@@ -168,6 +170,7 @@ class Trainer():
         plt.title('Training and Validation AUROC')
         plt.xlabel('Epochs')
         plt.ylabel('AUROC')
+        plt.legend(loc='best')
 
         plt.savefig(f"{self.args.save_dir}/{filename}")
         plt.close()
@@ -190,6 +193,7 @@ class Trainer():
         plt.title('Training and Validation Loss')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
+        plt.legend(loc='best')
 
         plt.savefig(f"{self.args.save_dir}/{filename}")
         plt.close()
