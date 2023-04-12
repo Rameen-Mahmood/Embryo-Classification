@@ -96,7 +96,7 @@ elif args.model == 'xception':
     )
     xnet = xnet.to(device)
 
-    optimizer = optim.Adam(xnet.parameters(), lr=0.001)
+    optimizer = optim.SGD(xnet.parameters(), lr=0.003)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5)
     criterion = LabelSmoothingCrossEntropy()
     criterion = criterion.to(device)
