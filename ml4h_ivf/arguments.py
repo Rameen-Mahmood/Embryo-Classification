@@ -8,7 +8,7 @@ def args_parser():
     	default = "/media/nyuad/189370B3586E6F7C/group1", 
     	help="indicate the path of datasets")
     parser.add_argument("--m", dest="model", type=str, action="store", 
-    	default = 'resnet18', 
+    	default = 'resnet50', 
     	help="choose the learning model")
     parser.add_argument('--mode', type=str, default="train",
         help='mode: train or test')

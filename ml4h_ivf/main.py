@@ -21,7 +21,7 @@ from pathlib import Path
 import pandas as pd
 import pickle
 
-
+from models.xception import build_xception
 from datasets.embryo_public import get_public_embryo
 from arguments import args_parser
 from trainers import Trainer
@@ -54,31 +54,55 @@ dataset_sizes = {
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-if args.model == 'resnet18':
-    resnet18 = models.resnet18(models.ResNet18_Weights.IMAGENET1K_V1).to('cuda')  
+if args.model == 'resnet50':
+    resnet18 = models.resnet50(models.ResNet50_Weights.IMAGENET1K_V1).to('cuda')  
     # Freeze all the layers in the model
-    for param in resnet18.parameters():
+    for param in resnet50.parameters():
         param.requires_grad = False
 
     # Create a new output layer with 16 output units
     # resnet18.fc = nn.Linear(num_ftrs, 16).to("cuda")
     
-    n_inputs = resnet18.fc.in_features
+    n_inputs = resnet50.fc.in_features
     resnet18.fc = nn.Sequential(
         nn.Linear(n_inputs, 512),
         nn.ReLU(),
         # nn.Dropout(0.1),
         nn.Linear(512, 16),
     )
-    resent18 = resnet18.to(device)
+    resent18 = resnet50.to(device)
 
-    optimizer = optim.Adam(resnet18.parameters(), lr=0.001)
+    optimizer = optim.Adam(resnet50.parameters(), lr=0.001)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5) #not use
     criterion = LabelSmoothingCrossEntropy()
     criterion = criterion.to(device)
     num_epochs = args.num_epochs
 
-    trainer = Trainer(args, dataloaders, dataset_sizes, resnet18, criterion, optimizer, scheduler, num_epochs)
+    trainer = Trainer(args, dataloaders, dataset_sizes, resnet50, criterion, optimizer, scheduler, num_epochs)
+
+elif args.model == 'xception':
+    xnet = build_xception(pretrained = True)
+    # Freeze all the layers in the model
+    for param in xnet.parameters():
+        param.requires_grad = False
+
+    
+    n_inputs = xnet.fc.in_features
+    xnet.fc = nn.Sequential(
+        nn.Linear(n_inputs, 512),
+        nn.ReLU(),
+        # nn.Dropout(0.1),
+        nn.Linear(512, 16),
+    )
+    xnet = xnet.to(device)
+
+    optimizer = optim.Adam(xnet.parameters(), lr=0.001)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5)
+    criterion = LabelSmoothingCrossEntropy()
+    criterion = criterion.to(device)
+    num_epochs = args.num_epochs
+
+    trainer = Trainer(args, dataloaders, dataset_sizes, xnet, criterion, optimizer, scheduler, num_epochs)
 
 elif args.model == 'transformer':
     transformer = torch.hub.load('facebookresearch/deit:main', 'deit_tiny_patch16_224', pretrained=True)
