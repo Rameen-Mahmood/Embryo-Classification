@@ -51,7 +51,7 @@ class Trainer():
             return
 
         path = f'checkpoints/{self.args.load_state}.pth.tar'
-        checkpoint = torch.load(self.args.load_state)
+        checkpoint = torch.load(path)
 
         own_state = self.model.state_dict()
 
