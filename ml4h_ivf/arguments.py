@@ -19,5 +19,8 @@ def args_parser():
     parser.add_argument('--save_dir', type=str, 
     	help='Directory relative which all output files are stored',
         default='checkpoints')
+    parser.add_argument('--load_state', type=str, 
+        help='Directory of saved state',
+        default=None)
 
     return parser

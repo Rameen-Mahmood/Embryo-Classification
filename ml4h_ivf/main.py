@@ -113,7 +113,7 @@ elif args.model == 'transformer':
     transformer.head = nn.Sequential(
         nn.Linear(n_inputs, 512),
         nn.ReLU(),
-        nn.Dropout(0.3),
+        nn.Dropout(0.2),
         nn.Linear(512, 16)
     )
     transformer = transformer.to(device)
@@ -132,11 +132,13 @@ else:
 
 if args.mode == 'train':
     print("==> training")
+    trainer.load_state()
     trainer.train_epoch()
     trainer.plot_auroc()
     trainer.plot_loss()
 
     trainer.test_net()
+    trainer.plot_stats()
 
 # elif args.mode == 'eval':
 #     trainer.eval()
