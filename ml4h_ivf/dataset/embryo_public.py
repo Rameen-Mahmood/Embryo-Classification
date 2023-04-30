@@ -153,6 +153,7 @@ def get_public_embryo(args):
 	annotations = [file for file in Path(annotations_path).glob('*.csv')]
 	ann_df = make_ann_df(annotations)
 	
+	# 7 focal planes
 	imgs_path = local_path + "/embryo_dataset_F15"
 	imgs_dir = [img for img in Path(imgs_path).glob('*')]
 	img_df = make_img_df(imgs_dir)

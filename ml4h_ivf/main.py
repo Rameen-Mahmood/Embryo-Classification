@@ -22,7 +22,7 @@ import pandas as pd
 import pickle
 
 from models.xception import build_xception
-from datasets.embryo_public import get_public_embryo
+from dataset.embryo_public import get_public_embryo
 from arguments import args_parser
 from trainers import Trainer
 import argparse 
@@ -55,7 +55,7 @@ dataset_sizes = {
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 if args.model == 'resnet50':
-    resnet18 = models.resnet50(models.ResNet50_Weights.IMAGENET1K_V1).to('cuda')  
+    resnet50 = models.resnet50(models.ResNet50_Weights.IMAGENET1K_V1).to('cuda')  
     # Freeze all the layers in the model
     for param in resnet50.parameters():
         param.requires_grad = False
@@ -64,13 +64,13 @@ if args.model == 'resnet50':
     # resnet18.fc = nn.Linear(num_ftrs, 16).to("cuda")
     
     n_inputs = resnet50.fc.in_features
-    resnet18.fc = nn.Sequential(
+    resnet50.fc = nn.Sequential(
         nn.Linear(n_inputs, 512),
         nn.ReLU(),
         # nn.Dropout(0.1),
         nn.Linear(512, 16),
     )
-    resent18 = resnet50.to(device)
+    resent50 = resnet50.to(device)
 
     optimizer = optim.Adam(resnet50.parameters(), lr=0.001)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.01, patience=5) #not use
