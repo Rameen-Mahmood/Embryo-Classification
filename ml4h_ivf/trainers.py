@@ -199,7 +199,7 @@ class Trainer():
                 running_corrects = 0.0
                 auroc_sum = 0.0
 
-                for inputs, labels in tqdm(self.dataloaders[phase]):
+                for inputs, labels, time_stamp in tqdm(self.dataloaders[phase]):
                     inputs = inputs.to(device)
                     labels = labels.to(device)
                     
