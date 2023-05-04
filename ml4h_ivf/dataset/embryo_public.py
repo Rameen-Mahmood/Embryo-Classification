@@ -76,6 +76,7 @@ def make_time_df(timestamps):
         time_df[sample_name] = df
     return time_df
 
+
 def make_ann_df(annotations):
     ann_df = {}
     for ann in annotations:
@@ -127,14 +128,15 @@ def make_img_df(imgs_dir):
         img_df[sample_str.split('/')[-1]] = df
     return img_df
 
-def merge_df(all_df_img, all_df_ann, all_df_time):
+
+def merge_df(all_df_img, all_df_ann, all_df_time, all_df_ttb):
     dataframes = []
     for x in all_df_img:
         if x == '.DS_Store':
             continue
         else:
-            mapped_df = pd.merge(pd.merge(all_df_img[x], all_df_ann[x], on="Index"), 
-                    all_df_time[x], on="Index")
+            mapped_df = pd.merge(pd.merge(pd.merge(all_df_img[x], all_df_ann[x], on="Index"), 
+                    all_df_time[x], on="Index"), all_df_ttb[x], on="Index")
             
             dataframes.append(mapped_df)
     meta_dataset = pd.concat(dataframes, axis=0)
@@ -181,10 +183,35 @@ def get_public_embryo(args):
     times_path = local_path + "/embryo_dataset_time_elapsed"
     times_dir = [time for time in Path(times_path).glob('*')]
     time_df = make_time_df(times_dir)
-    
-    dataset = merge_df(img_df, ann_df, time_df)
+
+    # add an extra column of time to blastocyst 
+    # the first tB timestamp for each sample
+
+    # time to blastocsyst dataframe
+    ttb_df = {}
+    colnames = ['Index', 'TTB']
+    for sample_name in ann_df:
+        tb_start_index = -1
+        tb_start_time = 0.0
+        
+        for index, row in ann_df[sample_name].iterrows(): #row
+            if row['Phase'] == 'tB':
+                tb_start_index = row['Index']
+                break
+
+        for index, row in time_df[sample_name].iterrows():
+            if row['Index'] == tb_start_index:
+                tb_start_time = row['TimeStamp']
+                break
+        # df = pd.DataFrame(data = d)
+        ttb_df[sample_name] = pd.DataFrame([(tb_start_time-row['TimeStamp']) 
+            for index, row in time_df[sample_name].iterrows()], columns=['TTD'])
+        ttb_df[sample_name]['Index'] = time_df[sample_name]['Index']
+
+    # merge dataset
+    dataset = merge_df(img_df, ann_df, time_df, ttb_df)
     print(dataset.head())
-    
+
     train_df, test_val_df = train_test_split(dataset, test_size=0.3)
     test_df, val_df = train_test_split(test_val_df, test_size=0.5)
     
