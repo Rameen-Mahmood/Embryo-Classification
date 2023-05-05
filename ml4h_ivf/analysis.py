@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # For preprocessing
+#! pip install sklearn-pandas
 from sklearn.preprocessing import StandardScaler
 from sklearn_pandas import DataFrameMapper 
 
@@ -16,9 +17,16 @@ from pycox.models.loss import NLLLogistiHazardLoss
 from pycox.evaluation import EvalSurv
 
 from dataset.embryo_public import get_public_embryo
+import argparse
+from arguments import args_parser
+
+
+parser = args_parser()
+args = parser.parse_args()
+print(args)
 
 # df_train = metabric.read_df()
-df_train = get_public_embryo(surv = True)
+df_train = get_public_embryo(args, surv = True)
 df_test = df_train.sample(frac=0.2)
 df_train = df_train.drop(df_test.index)
 df_val = df_train.sample(frac=0.2)
@@ -26,22 +34,15 @@ df_train = df_train.drop(df_val.index)
 
 
 # feature transform
-cols_standardize = ['x0', 'x1', 'x2', 'x3', 'x8']
-cols_leave = ['x4', 'x5', 'x6', 'x7']
-
-standardize = [([col], StandardScaler()) for col in cols_standardize]
-leave = [(col, None) for col in cols_leave]
-
-x_mapper = DataFrameMapper(standardize + leave)
-x_train = x_mapper.fit_transform(df_train).astype('float32')
-x_val = x_mapper.transform(df_val).astype('float32')
-x_test = x_mapper.transform(df_test).astype('float32')
+train_dataset = Embryo_Public(train_df, args, transform=train_transforms)
+val_dataset = Embryo_Public(val_df, args, transform=test_transforms)
+test_dataset = Embryo_Public(test_df, args, transform=test_transforms)
 
 
 # label transform
 num_durations = 10
 labtrans = LogisticHazard.label_transform(num_durations)
-get_target = lambda df: (df['duration'].values, df['event'].values)
+get_target = lambda df: (df['TTD'].values, (df['Phase'].values == 'tB'))
 y_train_surv = labtrans.fit_transform(*get_target(df_train))
 y_val_surv = labtrans.transform(*get_target(df_val))
 
@@ -51,6 +52,8 @@ val = tt.tuplefy(x_val, (y_val_surv, x_val))
 # We don't need to transform the test labels
 durations_test, events_test = get_target(df_test)
 
+# combined idx_durations and events intro the tuple y_train_surv
+print(y_train_surv)
 
 
 # the loss
@@ -71,3 +74,37 @@ class LossAELogHaz(nn.Module):
 loss = LossAELogHaz(0.6)
 
 model = LogisticHazard(net, tt.optim.Adam(0.01), duration_index=labtrans.cuts, loss=loss)
+
+dl = model.make_dataloader(train, batch_size=5, shuffle=False)
+batch = next(iter(dl))
+
+??model.compute_metrics
+
+model.compute_metrics(batch)
+model.score_in_batches(*train)
+
+metrics = dict(
+    loss_surv = LossAELogHaz(1),
+    loss_ae   = LossAELogHaz(0)
+)
+callbacks = [tt.cb.EarlyStopping()]
+
+batch_size = 256
+epochs = 10
+log = model.fit(*train, batch_size, epochs, callbacks, False, val_data=val, metrics=metrics)
+
+res = model.log.to_pandas()
+
+
+#_ = res[['train_loss', 'val_loss']].plot()
+
+#_ = res[['train_loss_surv', 'val_loss_surv']].plot()
+
+#_ = res[['train_loss_ae', 'val_loss_ae']].plot()
+
+# prediction
+surv = model.interpolate(10).predict_surv_df(x_test)\
+
+surv.iloc[:, :5].plot(drawstyle='steps-post')
+plt.ylabel('S(t | x)')
+_ = plt.xlabel('Time')
