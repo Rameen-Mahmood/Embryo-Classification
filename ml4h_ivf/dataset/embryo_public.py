@@ -43,18 +43,19 @@ class Embryo_Public(Dataset):
                        "tEB":14, "tHB":15}
 
     def __getitem__(self, index):
-        img = self.dataframe.iloc[index]["Images"]
+        img = self.dataframe.iloc[index]["Image"]
         label = self.dataframe.iloc[index]["Phase"]
         label_id = self.label_to_id[label]
         time_stamp = self.dataframe.iloc[index]["TimeStamp"]
-        
+        ttd = self.dataframe.iloc[index]["TTD"]
+
         if self.transform:
             # img = self.transform(img)
             # Load the image and apply the transform
             img_pil = PIL.Image.open(img).convert("RGB")
             image_tensor = self.transform(img_pil)
             
-        return image_tensor, label_id, time_stamp
+        return image_tensor, label_id, time_stamp, ttd
     
     def __len__(self):
         return len(self.dataframe)
@@ -122,7 +123,7 @@ def make_img_df(imgs_dir):
         frame_num = [int(str(image).split('RUN')[1].split('.')[0]) for image in Path(sample_str).glob('*.jpeg')]  
         
         # paths = [path.parts[-3:] for path in Path(image_dir_path).rglob('*.jpg')]
-        df = pd.DataFrame(data=images, columns=['Images'])
+        df = pd.DataFrame(data=images, columns=['Image'])
         df['Index'] = frame_num
         # pd.options.display.max_colwidth = 150
         img_df[sample_str.split('/')[-1]] = df
@@ -164,7 +165,7 @@ def get_transforms(args):
     return train_transforms, test_transforms
 
 
-def get_public_embryo(args):
+def get_public_embryo(args, surv = False):
 
     train_transforms, test_transforms = get_transforms(args)
     
@@ -187,8 +188,7 @@ def get_public_embryo(args):
     # add an extra column of time to blastocyst 
     # the first tB timestamp for each sample
 
-    # time to blastocsyst dataframe
-    ttb_df = {}
+    ttb_df = {} # time to blastocsyst dataframe
     colnames = ['Index', 'TTB']
     for sample_name in ann_df:
         tb_start_index = -1
@@ -208,9 +208,12 @@ def get_public_embryo(args):
             for index, row in time_df[sample_name].iterrows()], columns=['TTD'])
         ttb_df[sample_name]['Index'] = time_df[sample_name]['Index']
 
-    # merge dataset
+    # merge
     dataset = merge_df(img_df, ann_df, time_df, ttb_df)
     print(dataset.head())
+
+    if(surv == True):
+        return dataset
 
     train_df, test_val_df = train_test_split(dataset, test_size=0.3)
     test_df, val_df = train_test_split(test_val_df, test_size=0.5)
