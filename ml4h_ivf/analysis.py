@@ -45,28 +45,28 @@ df_test = df_test.sample(frac=0.001)
 print("Downsampling completed.", df_train.size)
 
 # feature transform, Image
-def get_transforms(df, train = True):
-    if train == True:
-        transform = transforms.Compose([
-            transforms.Resize(224),
-            #transforms.CenterCrop(224),
-            transforms.RandomHorizontalFlip(),
-            #transforms.RandomVerticalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])
-        ])
-    else:
-        transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])
-        ])
+# def get_transforms(df, train = True):
+#   if train == True:
+#       transform = transforms.Compose([
+#           transforms.Resize(224),
+#           #transforms.CenterCrop(224),
+#           transforms.RandomHorizontalFlip(),
+#           #transforms.RandomVerticalFlip(),
+#           transforms.ToTensor(),
+#           transforms.Normalize(mean=[0.485, 0.456, 0.406],
+#                                std=[0.229, 0.224, 0.225])
+#       ])
+#   else:
+#       transform = transforms.Compose([
+#           transforms.Resize((224, 224)),
+#           transforms.ToTensor(),
+#           transforms.Normalize(mean=[0.485, 0.456, 0.406],
+#                                std=[0.229, 0.224, 0.225])
+#       ])
 
-    #df_transform = [print(x) for x in df['Image']]
-    df_transform = [transform(PIL.Image.open(x).convert("RGB")) for x in df['Image']]
-    return df_transform
+#   #df_transform = [print(x) for x in df['Image']]
+#   df_transform = [transform(PIL.Image.open(x).convert("RGB")) for x in df['Image']]
+#   return df_transform
 
 
 def get_transform(args):
@@ -109,8 +109,8 @@ y_train_surv = labtrans.fit_transform(*get_target(df_train))
 y_val_surv = labtrans.transform(*get_target(df_val))
 y_test_surv = labtrans.transform(*get_target(df_test))
 
-train = tt.tuplefy(x_train, (y_train_surv, x_train))
-val = tt.tuplefy(x_val, (y_val_surv, x_val))
+# train = tt.tuplefy(x_train, (y_train_surv, x_train))
+# val = tt.tuplefy(x_val, (y_val_surv, x_val))
 
 # We don't need to transform the test labels
 durations_test, events_test = get_target(df_test)
@@ -197,7 +197,7 @@ metrics = dict(
 )
 callbacks = [tt.cb.EarlyStopping(patience=5)]
 
-epochs = 30
+epochs = 40
 verbose = True
 batch_size = 32
 
@@ -228,8 +228,8 @@ print(next(iter(dl_test_x)).shape)
 
 surv = model.predict_surv_df(dl_test_x)
 
-
-for i in range(10):
-    idx = x_test.targets.numpy() == i
-    surv.loc[:, idx].mean(axis=1).rename(i).plot()
-_ = plt.legend()
+surv.iloc[:, :5].plot(drawstyle='steps-post')
+plt.ylabel('S(t | x)')
+_ = plt.xlabel('Time')
+plt.savefig(f"{args.save_dir}/survival.pdf")
+plt.close()
