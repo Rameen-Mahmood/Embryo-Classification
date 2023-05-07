@@ -37,6 +37,8 @@ print(args)
 # df_train = metabric.read_df()
 df_train, df_val, df_test = get_public_embryo(args, surv = True)
 
+
+# feature transform, Image
 def get_transforms(df, train = True):
     if train == True:
         transform = transforms.Compose([
@@ -56,18 +58,15 @@ def get_transforms(df, train = True):
                                  std=[0.229, 0.224, 0.225])
         ])
 
-    df_transform = [transform(PIL.Image.open(x).convert("RGB")) for x in df]
-
+    #df_transform = [print(x) for x in df['Image']]
+    df_transform = [transform(PIL.Image.open(x).convert("RGB")) for x in df['Image']]
 
     return df_transform
-
-
 
 x_train = get_transforms(df_train)
 x_val = get_transforms(df_val, train = False)
 x_test = get_transforms(df_test, train = False)
-
-# feature transform, Image
+print("Image transform completed.")
 
 # label transform
 num_durations = 10
@@ -106,6 +105,7 @@ class LossAELogHaz(nn.Module):
 
 loss = LossAELogHaz(0.6)
 
+
 model = LogisticHazard(net, tt.optim.Adam(0.01), duration_index=labtrans.cuts, loss=loss)
 
 dl = model.make_dataloader(train, batch_size=5, shuffle=False)
@@ -138,5 +138,5 @@ res = model.log.to_pandas()
 surv = model.interpolate(10).predict_surv_df(x_test)\
 
 surv.iloc[:, :5].plot(drawstyle='steps-post')
-plt.ylabel('S(t | x)')
-_ = plt.xlabel('Time')
+# plt.ylabel('S(t | x)')
+# _ = plt.xlabel('Time')
