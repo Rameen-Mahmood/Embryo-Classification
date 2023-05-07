@@ -147,8 +147,8 @@ class EmbryoDatasetTime(Dataset):
         img = self.dataframe[index][0]
         return img, (self.time[index], self.event[index])
 
-dataset_train = EmbryoDatasetTime(mnist_train, *y_train_surv)
-dataset_test = EmbryoDatasetTime(mnist_test, *y_val_surv)
+dataset_train = EmbryoDatasetTime(x_train, *y_train_surv)
+dataset_test = EmbryoDatasetTime(x_val, *y_val_surv)
 
 
 
