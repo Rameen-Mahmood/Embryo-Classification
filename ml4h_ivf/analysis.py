@@ -39,35 +39,14 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 # df_train = metabric.read_df()
 df_train, df_val, df_test = get_public_embryo(args, surv = True)
-df_train = df_train.sample(frac=0.001)
-df_val = df_val.sample(frac=0.001)
-df_test = df_test.sample(frac=0.001)
+df_train = df_train.sample(frac=0.002)
+df_val = df_val.sample(frac=0.002)
+df_test = df_test.sample(frac=0.002)
 print("Downsampling completed.", df_train.size)
 
 # feature transform, Image
-# def get_transforms(df, train = True):
-#   if train == True:
-#       transform = transforms.Compose([
-#           transforms.Resize(224),
-#           #transforms.CenterCrop(224),
-#           transforms.RandomHorizontalFlip(),
-#           #transforms.RandomVerticalFlip(),
-#           transforms.ToTensor(),
-#           transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                                std=[0.229, 0.224, 0.225])
-#       ])
-#   else:
-#       transform = transforms.Compose([
-#           transforms.Resize((224, 224)),
-#           transforms.ToTensor(),
-#           transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                                std=[0.229, 0.224, 0.225])
-#       ])
 
-#   #df_transform = [print(x) for x in df['Image']]
-#   df_transform = [transform(PIL.Image.open(x).convert("RGB")) for x in df['Image']]
-#   return df_transform
-
+# df_transform = [transform(PIL.Image.open(x).convert("RGB")) for x in df['Image']]
 
 def get_transform(args):
     train_transforms = transforms.Compose([
@@ -195,9 +174,9 @@ metrics = dict(
     loss_surv = LossAELogHaz(1),
     loss_ae   = LossAELogHaz(0)
 )
-callbacks = [tt.cb.EarlyStopping(patience=5)]
+callbacks = [tt.cb.EarlyStopping(patience=10)]
 
-epochs = 40
+epochs = 50
 verbose = True
 batch_size = 32
 
@@ -206,7 +185,7 @@ print(pred.shape)
 log = model.fit_dataloader(dl_train, epochs, callbacks, verbose, val_dataloader=dl_val)
 
 res = model.log.to_pandas()
-print(res.head())
+#print(res.head())
 
 
 # Prediction
@@ -228,8 +207,27 @@ print(next(iter(dl_test_x)).shape)
 
 surv = model.predict_surv_df(dl_test_x)
 
-surv.iloc[:, :5].plot(drawstyle='steps-post')
+surv.iloc[:, :10].plot(drawstyle='steps-post')
 plt.ylabel('S(t | x)')
-_ = plt.xlabel('Time')
+_ = plt.xlabel('Time (hr)')
 plt.savefig(f"{args.save_dir}/survival.pdf")
+plt.close()
+
+# Concordance
+ev = EvalSurv(surv, durations_test, events_test, censor_surv='km')
+print(ev.concordance_td('antolini'))
+
+# Brier Score
+time_grid = np.linspace(durations_test.min(), durations_test.max(), 100)
+ev.brier_score(time_grid).plot()
+plt.ylabel('Brier score')
+_ = plt.xlabel('Time')
+plt.savefig(f"{args.save_dir}/brier_score.pdf")
+plt.close()
+
+# Negative binomial log-likelihood
+ev.nbll(time_grid).plot()
+plt.ylabel('NBLL')
+_ = plt.xlabel('Time')
+plt.savefig(f"{args.save_dir}/Negative binomial log-likelihood.pdf")
 plt.close()
