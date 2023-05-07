@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
+import pandas as pd
 
 # For preprocessing
 #! pip install sklearn-pandas
@@ -12,7 +13,9 @@ import torch # For building the networks
 from torch import nn
 import torch.nn.functional as F
 import torchtuples as tt # Some useful functions
+from torch.utils.data import Dataset
 import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
 
 from pycox.datasets import metabric
 from pycox.models import LogisticHazard
@@ -28,15 +31,17 @@ from dataset.embryo_public import get_public_embryo
 import argparse
 from arguments import args_parser
 
-
-
 parser = args_parser()
 args = parser.parse_args()
 print(args)
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 # df_train = metabric.read_df()
 df_train, df_val, df_test = get_public_embryo(args, surv = True)
-
+df_train = df_train.sample(frac=0.001)
+df_val = df_val.sample(frac=0.001)
+df_test = df_test.sample(frac=0.001)
+print("Downsampling completed.", df_train.size)
 
 # feature transform, Image
 def get_transforms(df, train = True):
@@ -60,19 +65,21 @@ def get_transforms(df, train = True):
 
     #df_transform = [print(x) for x in df['Image']]
     df_transform = [transform(PIL.Image.open(x).convert("RGB")) for x in df['Image']]
-
     return df_transform
 
 x_train = get_transforms(df_train)
+print("Image transform for training completed.")
 x_val = get_transforms(df_val, train = False)
 x_test = get_transforms(df_test, train = False)
-print("Image transform completed.")
+
 
 # label transform
 num_durations = 10
 labtrans = LogisticHazard.label_transform(num_durations)
+
 get_target = lambda df: (df['TimeStamp'].values, 
-    (df['Phase'].values == 'tB') or (df['Phase'].values == 'tEB') or (df['Phase'].values == 'tHB'))
+    np.array([(x=='tB') or (x=='tEB') or (x=='tHB') for x in df['Phase']]))
+
 y_train_surv = labtrans.fit_transform(*get_target(df_train))
 y_val_surv = labtrans.transform(*get_target(df_val))
 
@@ -83,10 +90,25 @@ val = tt.tuplefy(x_val, (y_val_surv, x_val))
 durations_test, events_test = get_target(df_test)
 
 # combined idx_durations and events intro the tuple y_train_surv
-print(y_train_surv)
+print("y_train_surv", type(y_train_surv))
+print("out_features: ", labtrans.out_features)
 
 # modify the original transformer to consider "duration"
+#in_features = x_train.shape[1]
+out_features = labtrans.out_features
 
+transformer = torch.hub.load('facebookresearch/deit:main', 'deit_tiny_patch16_224', pretrained=True, force_reload=True)
+for param in transformer.parameters(): #freeze model
+    param.requires_grad = False
+
+n_inputs = transformer.head.in_features
+transformer.head = nn.Sequential(
+    nn.Linear(n_inputs, 512),
+    nn.ReLU(),
+    nn.Dropout(0.2),
+    nn.Linear(512, out_features)
+)
+net = transformer.to(device)
 
 # the loss
 class LossAELogHaz(nn.Module):
@@ -105,16 +127,44 @@ class LossAELogHaz(nn.Module):
 
 loss = LossAELogHaz(0.6)
 
-
 model = LogisticHazard(net, tt.optim.Adam(0.01), duration_index=labtrans.cuts, loss=loss)
 
-dl = model.make_dataloader(train, batch_size=5, shuffle=False)
+
+
+class EmbryoDatasetTime(Dataset):
+    """Simulatied data from MNIST. Read a single entry at a time.
+    """
+    def __init__(self, dataframe, time, event):
+        self.dataframe = dataframe
+        self.time, self.event = tt.tuplefy(time, event).to_tensor()
+
+    def __len__(self):
+        return len(self.dataframe)
+
+    def __getitem__(self, index):
+        if type(index) is not int:
+            raise ValueError(f"Need `index` to be `int`. Got {type(index)}.")
+        img = self.dataframe[index][0]
+        return img, (self.time[index], self.event[index])
+
+dataset_train = EmbryoDatasetTime(mnist_train, *y_train_surv)
+dataset_test = EmbryoDatasetTime(mnist_test, *y_val_surv)
+
+
+
+# go over one sample
+def collate_fn(batch):
+    """Stacks the entries of a nested tuple"""
+    return tt.tuplefy(batch).stack()
+
+#dl = DataLoader(train, batch_size=5, shuffle=False, collate_fn = collate_fn)
+dl = DataLoader(dataset_train, batch_size=5, shuffle=False, collate_fn = collate_fn)
 batch = next(iter(dl))
 
+print(model.compute_metrics(batch))
+print(model.score_in_batches(*train))
 
-model.compute_metrics(batch)
-model.score_in_batches(*train)
-
+# training
 metrics = dict(
     loss_surv = LossAELogHaz(1),
     loss_ae   = LossAELogHaz(0)
@@ -126,7 +176,7 @@ epochs = 10
 log = model.fit(*train, batch_size, epochs, callbacks, False, val_data=val, metrics=metrics)
 
 res = model.log.to_pandas()
-
+print(res.head())
 
 #_ = res[['train_loss', 'val_loss']].plot()
 
