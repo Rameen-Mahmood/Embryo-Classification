@@ -5,6 +5,7 @@ import PIL.ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import pandas as pd 
 import torch
+import torchtuples as tt # Some useful functions
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
@@ -41,13 +42,14 @@ class Embryo_Public(Dataset):
                        "t9+":10, "tM":11, 
                        "tSB":12, "tB":13, 
                        "tEB":14, "tHB":15}
+        #self.time, self.event = tt.tuplefy(time, event).to_tensor()
 
     def __getitem__(self, index):
         img = self.dataframe.iloc[index]["Image"]
         label = self.dataframe.iloc[index]["Phase"]
         label_id = self.label_to_id[label]
         time_stamp = self.dataframe.iloc[index]["TimeStamp"]
-        ttd = self.dataframe.iloc[index]["TTD"]
+        ttb = self.dataframe.iloc[index]["TTB"]
 
         if self.transform:
             # img = self.transform(img)
@@ -55,7 +57,7 @@ class Embryo_Public(Dataset):
             img_pil = PIL.Image.open(img).convert("RGB")
             image_tensor = self.transform(img_pil)
             
-        return image_tensor, label_id, time_stamp, ttd
+        return image_tensor, label_id, time_stamp, ttb
     
     def __len__(self):
         return len(self.dataframe)
@@ -194,33 +196,35 @@ def get_public_embryo(args, surv = False):
         tb_start_index = -1
         tb_start_time = 0.0
         
-        for index, row in ann_df[sample_name].iterrows(): #row
-            if row['Phase'] == 'tB':
-                tb_start_index = row['Index']
-                break
+        # for index, row in ann_df[sample_name].iterrows(): #row
+        #     if row['Phase'] == 'tB':
+        #         tb_start_index = row['Index']
+        #         break
 
-        for index, row in time_df[sample_name].iterrows():
-            if row['Index'] == tb_start_index:
-                tb_start_time = row['TimeStamp']
-                break
+        # for index, row in time_df[sample_name].iterrows():
+        #     if row['Index'] == tb_start_index:
+        #         tb_start_time = row['TimeStamp']
+        #         break
         # df = pd.DataFrame(data = d)
         ttb_df[sample_name] = pd.DataFrame([(tb_start_time-row['TimeStamp']) 
-            for index, row in time_df[sample_name].iterrows()], columns=['TTD'])
+            for index, row in time_df[sample_name].iterrows()], columns=['TTB'])
         ttb_df[sample_name]['Index'] = time_df[sample_name]['Index']
 
     # merge
     dataset = merge_df(img_df, ann_df, time_df, ttb_df)
     print(dataset.head())
 
-    if(surv == True):
-        return dataset
 
     train_df, test_val_df = train_test_split(dataset, test_size=0.3)
     test_df, val_df = train_test_split(test_val_df, test_size=0.5)
+
+    if(surv == True):
+        return train_df, val_df, test_df
     
     train_dataset = Embryo_Public(train_df, args, transform=train_transforms)
     val_dataset = Embryo_Public(val_df, args, transform=test_transforms)
     test_dataset = Embryo_Public(test_df, args, transform=test_transforms)
+
     
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
